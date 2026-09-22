@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NM Labs - Monitoramento Climático</title>
+    <!-- Importando o Tailwind CSS para um design moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-6">
+
+    <div class="max-w-5xl mx-auto">
+        <!-- Cabeçalho -->
+        <header class="mb-8 border-b border-slate-800 pb-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-emerald-400">NM Labs</h1>
+                <p class="text-slate-400 text-sm">Sistema IoT de Controle Climático - ESP32 & Supabase</p>
+            </div>
+            <div class="text-right">
+                <span class="inline-block bg-emerald-900 text-emerald-300 text-xs px-3 py-1 rounded-full font-medium">Sistema Online</span>
+            </div>
+        </header>
+
+        <!-- Painel de Controle / Filtros -->
+        <div class="bg-slate-800 p-6 rounded-xl shadow-lg mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Filtrar por Data</label>
+                <input type="date" id="filtroData" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-200 focus:outline-none focus:border-emerald-500">
+            </div>
+            <div class="flex gap-2">
+                <button onclick="carregarDados()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-4 rounded-lg transition duration-200 shadow-md">
+                    Consultar Nuvem
+                </button>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="exportarCSV()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 px-4 rounded-lg transition duration-200 shadow-md">
+                    Exportar Relatório
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabela de Dados -->
+        <div class="bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-700">
+            <div class="p-4 bg-slate-800/50 border-b border-slate-700 font-semibold text-slate-300">
+                Histórico de Leituras Ambientais
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-900/50 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-700">
+                            <th class="p-4">Data / Hora</th>
+                            <th class="p-4">Temperatura</th>
+                            <th class="p-4">Umidade</th>
+                            <th class="p-4">Status / Alerta</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaDados" class="divide-y divide-slate-700 text-sm">
+                        <tr>
+                            <td colspan="4" class="p-6 text-center text-slate-500">Clique em "Consultar Nuvem" para carregar os registros.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script de Integração com o Supabase -->
+    <script>
+        const SUPABASE_URL = "https://jfttyewqluguuiqflquk.supabase.co/rest/v1/leituras_ambientais";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmdHR5ZXdxbHVndXVpcWZscXVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2ODQ3MjAsImV4cCI6MjEwNTI2MDcyMH0.jE6NRvJpGA17M1pe6HhIo0kf4112pDkaaqNEUdVgPY0";
+        
+        let dadosGlobais = [];
+
+        async function carregarDados() {
+            const tbody = document.getElementById('tabelaDados');
+            tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-400">Buscando dados no Supabase...</td></tr>`;
+
+            // Correção na montagem da URL de consulta (usando ?select=* e & para os parâmetros)
+            let urlBusca = SUPABASE_URL + "?select=*&order=created_at.desc";
+            
+            // Aplicar filtro por data se preenchido
+            const dataFiltro = document.getElementById('filtroData').value;
+            if (dataFiltro) {
+                urlBusca += `&data_registro=eq.${dataFiltro}`;
+            }
+
+            try {
+                const response = await fetch(urlBusca, {
+                    method: 'GET',
+                    headers: {
+                        "apikey": SUPABASE_KEY,
+                        "Authorization": "Bearer " + SUPABASE_KEY
+                    }
+                });
+
+                if (!response.ok) throw new Error("Erro na requisição com o servidor.");
+
+                dadosGlobais = await response.json();
+
+                if (dadosGlobais.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-500">Nenhum registro encontrado.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = "";
+                dadosGlobais.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-700/30 transition duration-150";
+
+                    // Formatação de cor para os status
+                    let badgeColor = "bg-emerald-900/50 text-emerald-300 border border-emerald-700/50";
+                    if (item.log_status && item.log_status.includes("Alerta")) {
+                        badgeColor = "bg-amber-900/50 text-amber-300 border border-amber-700/50";
+                    }
+
+                    tr.innerHTML = `
+                        <td class="p-4 text-slate-300">${item.data_registro || '-'} às ${item.hora_registro || '-'}</td>
+                        <td class="p-4 font-semibold text-slate-100">${item.temperatura} °C</td>
+                        <td class="p-4 font-semibold text-slate-100">${item.umidade} %</td>
+                        <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-medium ${badgeColor}">${item.log_status}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+            } catch (error) {
+                console.error(error);
+                alert("Erro ao buscar dados do servidor. Verifique as credenciais.");
+                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-red-400">Falha na conexão com o Supabase.</td></tr>`;
+            }
+        }
+
+        function exportarCSV() {
+            if (dadosGlobais.length === 0) {
+                alert("Não há dados carregados para exportar!");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,ID,Temperatura,Umidade,Data,Hora,Status\r\n";
+            dadosGlobais.forEach(row => {
+                csvContent += `${row.id},${row.temperatura},${row.umidade},${row.data_registro},${row.hora_registro},"${row.log_status}"\r\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "relatorio_nm_labs.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Carrega os dados automaticamente ao abrir a página
+        window.onload = carregarDados;
+    </script>
+</body>
+</html>
