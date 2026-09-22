@@ -1,156 +1,914 @@
+```html
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>NM Labs - Monitoramento Climático</title>
-    <!-- Importando o Tailwind CSS para um design moderno -->
+
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-slate-900 text-slate-100 min-h-screen p-6">
 
     <div class="max-w-5xl mx-auto">
-        <!-- Cabeçalho -->
-        <header class="mb-8 border-b border-slate-800 pb-4 flex justify-between items-center">
+
+        <!-- ========================= -->
+        <!-- CABEÇALHO -->
+        <!-- ========================= -->
+
+        <header class="mb-8 border-b border-slate-800 pb-4 
+                       flex flex-col md:flex-row 
+                       justify-between items-start md:items-center gap-4">
+
             <div>
-                <h1 class="text-3xl font-bold text-emerald-400">NM Labs</h1>
-                <p class="text-slate-400 text-sm">Sistema IoT de Controle Climático - ESP32 & Supabase</p>
+                <h1 class="text-3xl font-bold text-emerald-400">
+                    NM Labs
+                </h1>
+
+                <p class="text-slate-400 text-sm">
+                    Sistema IoT de Controle Climático - ESP32 & Supabase
+                </p>
             </div>
+
             <div class="text-right">
-                <span class="inline-block bg-emerald-900 text-emerald-300 text-xs px-3 py-1 rounded-full font-medium">Sistema Online</span>
+
+                <span id="statusSistema"
+                    class="inline-block bg-slate-700 text-slate-300 
+                           text-xs px-3 py-1 rounded-full font-medium">
+
+                    Verificando conexão...
+
+                </span>
+
             </div>
+
         </header>
 
-        <!-- Painel de Controle / Filtros -->
-        <div class="bg-slate-800 p-6 rounded-xl shadow-lg mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+
+        <!-- ========================= -->
+        <!-- PAINEL DE CONTROLE -->
+        <!-- ========================= -->
+
+        <div class="bg-slate-800 p-6 rounded-xl shadow-lg mb-6 
+                    grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+
+            <!-- FILTRO DATA -->
+
             <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Filtrar por Data</label>
-                <input type="date" id="filtroData" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-200 focus:outline-none focus:border-emerald-500">
+
+                <label
+                    class="block text-xs font-semibold uppercase 
+                           tracking-wider text-slate-400 mb-2">
+
+                    Filtrar por Data
+
+                </label>
+
+                <input
+                    type="date"
+                    id="filtroData"
+                    class="w-full bg-slate-900 border border-slate-700 
+                           rounded-lg p-2.5 text-slate-200 
+                           focus:outline-none focus:border-emerald-500">
+
             </div>
+
+
+            <!-- CONSULTAR -->
+
             <div class="flex gap-2">
-                <button onclick="carregarDados()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-4 rounded-lg transition duration-200 shadow-md">
-                    Consultar Nuvem
+
+                <button
+                    onclick="carregarDados()"
+                    class="w-full bg-emerald-600 hover:bg-emerald-500 
+                           text-white font-semibold py-2.5 px-4 
+                           rounded-lg transition duration-200 shadow-md">
+
+                    🔄 Consultar Nuvem
+
                 </button>
+
             </div>
+
+
+            <!-- EXPORTAR -->
+
             <div class="flex gap-2">
-                <button onclick="exportarCSV()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 px-4 rounded-lg transition duration-200 shadow-md">
-                    Exportar Relatório
+
+                <button
+                    onclick="exportarCSV()"
+                    class="w-full bg-blue-600 hover:bg-blue-500 
+                           text-white font-semibold py-2.5 px-4 
+                           rounded-lg transition duration-200 shadow-md">
+
+                    📄 Exportar Relatório
+
                 </button>
+
             </div>
+
         </div>
 
-        <!-- Tabela de Dados -->
-        <div class="bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-700">
-            <div class="p-4 bg-slate-800/50 border-b border-slate-700 font-semibold text-slate-300">
-                Histórico de Leituras Ambientais
+
+        <!-- ========================= -->
+        <!-- INFORMAÇÕES -->
+        <!-- ========================= -->
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+
+            <!-- REGISTROS -->
+
+            <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
+
+                <p class="text-xs uppercase tracking-wider text-slate-400">
+                    Registros encontrados
+                </p>
+
+                <p id="totalRegistros"
+                    class="text-3xl font-bold text-emerald-400 mt-2">
+
+                    0
+
+                </p>
+
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-slate-900/50 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-700">
-                            <th class="p-4">Data / Hora</th>
-                            <th class="p-4">Temperatura</th>
-                            <th class="p-4">Umidade</th>
-                            <th class="p-4">Status / Alerta</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabelaDados" class="divide-y divide-slate-700 text-sm">
-                        <tr>
-                            <td colspan="4" class="p-6 text-center text-slate-500">Clique em "Consultar Nuvem" para carregar os registros.</td>
-                        </tr>
-                    </tbody>
-                </table>
+
+
+            <!-- TEMPERATURA -->
+
+            <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
+
+                <p class="text-xs uppercase tracking-wider text-slate-400">
+                    Última temperatura
+                </p>
+
+                <p id="ultimaTemperatura"
+                    class="text-3xl font-bold text-slate-100 mt-2">
+
+                    --
+
+                </p>
+
             </div>
+
+
+            <!-- UMIDADE -->
+
+            <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
+
+                <p class="text-xs uppercase tracking-wider text-slate-400">
+                    Última umidade
+                </p>
+
+                <p id="ultimaUmidade"
+                    class="text-3xl font-bold text-slate-100 mt-2">
+
+                    --
+
+                </p>
+
+            </div>
+
         </div>
+
+
+        <!-- ========================= -->
+        <!-- TABELA -->
+        <!-- ========================= -->
+
+        <div class="bg-slate-800 rounded-xl shadow-lg 
+                    overflow-hidden border border-slate-700">
+
+            <div
+                class="p-4 bg-slate-800/50 border-b border-slate-700 
+                       font-semibold text-slate-300">
+
+                Histórico de Leituras Ambientais
+
+            </div>
+
+
+            <div class="overflow-x-auto">
+
+                <table class="w-full text-left border-collapse">
+
+                    <thead>
+
+                        <tr
+                            class="bg-slate-900/50 text-slate-400 
+                                   text-xs uppercase tracking-wider 
+                                   border-b border-slate-700">
+
+                            <th class="p-4">
+                                Data / Hora
+                            </th>
+
+                            <th class="p-4">
+                                Temperatura
+                            </th>
+
+                            <th class="p-4">
+                                Umidade
+                            </th>
+
+                            <th class="p-4">
+                                Status / Alerta
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody
+                        id="tabelaDados"
+                        class="divide-y divide-slate-700 text-sm">
+
+                        <tr>
+
+                            <td colspan="4"
+                                class="p-6 text-center text-slate-500">
+
+                                Carregando dados...
+
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+
+        <!-- ========================= -->
+        <!-- ÁREA DE DIAGNÓSTICO -->
+        <!-- ========================= -->
+
+        <div class="mt-6 bg-slate-950 border border-slate-800 
+                    rounded-xl p-5">
+
+            <h2 class="text-sm font-semibold text-slate-300 mb-2">
+
+                🔧 Diagnóstico da conexão
+
+            </h2>
+
+            <p id="diagnostico"
+                class="text-xs text-slate-500 whitespace-pre-wrap">
+
+                Aguardando conexão com o Supabase...
+
+            </p>
+
+        </div>
+
+
+        <!-- RODAPÉ -->
+
+        <footer class="text-center text-slate-600 text-xs mt-8">
+
+            NM Labs — Protótipo IoT
+            <br>
+            ESP32 + DHT22 + Wokwi + Supabase
+
+        </footer>
+
     </div>
 
-    <!-- Script de Integração com o Supabase -->
+
+
+    <!-- ================================================= -->
+    <!-- JAVASCRIPT -->
+    <!-- ================================================= -->
+
     <script>
-        const SUPABASE_URL = "https://jfttyewqluguuiqflquk.supabase.co/rest/v1/leituras_ambientais";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmdHR5ZXdxbHVndXVpcWZscXVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2ODQ3MjAsImV4cCI6MjEwNTI2MDcyMH0.jE6NRvJpGA17M1pe6HhIo0kf4112pDkaaqNEUdVgPY0";
-        
+
+
+        // =================================================
+        // CONFIGURAÇÃO DO SUPABASE
+        // =================================================
+
+        const SUPABASE_URL =
+            "https://jfttyewqluguuiqflquk.supabase.co/rest/v1/leituras_ambientais";
+
+
+        const SUPABASE_KEY =
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmdHR5ZXdxbHVndXVpcWZscXVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2ODQ3MjAsImV4cCI6MjEwNTI2MDcyMH0.jE6NRvJpGA17M1pe6HhIo0kf4112pDkaaqNEUdVgPY0";
+
+
+        // Guarda os dados carregados
         let dadosGlobais = [];
 
-        async function carregarDados() {
-            const tbody = document.getElementById('tabelaDados');
-            tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-400">Buscando dados no Supabase...</td></tr>`;
 
-            // Correção na montagem da URL de consulta (usando ?select=* e & para os parâmetros)
-            let urlBusca = SUPABASE_URL + "?select=*&order=created_at.desc";
-            
-            // Aplicar filtro por data se preenchido
-            const dataFiltro = document.getElementById('filtroData').value;
-            if (dataFiltro) {
-                urlBusca += `&data_registro=eq.${dataFiltro}`;
+
+        // =================================================
+        // FUNÇÃO DE DIAGNÓSTICO
+        // =================================================
+
+        function mostrarDiagnostico(mensagem) {
+
+            const campo =
+                document.getElementById("diagnostico");
+
+            campo.textContent = mensagem;
+
+            console.log(mensagem);
+
+        }
+
+
+
+        // =================================================
+        // STATUS VISUAL DO SISTEMA
+        // =================================================
+
+        function alterarStatusSistema(status, tipo) {
+
+            const elemento =
+                document.getElementById("statusSistema");
+
+
+            elemento.textContent = status;
+
+
+            if (tipo === "sucesso") {
+
+                elemento.className =
+                    "inline-block bg-emerald-900 text-emerald-300 " +
+                    "text-xs px-3 py-1 rounded-full font-medium";
+
             }
+
+            else if (tipo === "erro") {
+
+                elemento.className =
+                    "inline-block bg-red-900 text-red-300 " +
+                    "text-xs px-3 py-1 rounded-full font-medium";
+
+            }
+
+            else {
+
+                elemento.className =
+                    "inline-block bg-slate-700 text-slate-300 " +
+                    "text-xs px-3 py-1 rounded-full font-medium";
+
+            }
+
+        }
+
+
+
+        // =================================================
+        // CARREGAR DADOS DO SUPABASE
+        // =================================================
+
+        async function carregarDados() {
+
+
+            const tbody =
+                document.getElementById("tabelaDados");
+
+
+            // Mensagem enquanto consulta
+
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4"
+                        class="p-6 text-center text-slate-400">
+
+                        🔄 Buscando dados no Supabase...
+
+                    </td>
+                </tr>
+            `;
+
+
+            alterarStatusSistema(
+                "Consultando Supabase...",
+                "normal"
+            );
+
+
+            mostrarDiagnostico(
+                "Iniciando consulta...\n\n" +
+                "Endpoint:\n" +
+                SUPABASE_URL
+            );
+
+
+
+            // =================================================
+            // MONTA URL
+            // =================================================
+
+            let urlBusca =
+                SUPABASE_URL +
+                "?select=*&order=created_at.desc";
+
+
+            // =================================================
+            // FILTRO POR DATA
+            // =================================================
+
+            const dataFiltro =
+                document.getElementById("filtroData").value;
+
+
+            if (dataFiltro) {
+
+                urlBusca +=
+                    "&data_registro=eq." +
+                    dataFiltro;
+
+            }
+
+
+
+            console.log("URL utilizada:");
+
+            console.log(urlBusca);
+
+
+
+            // =================================================
+            // REQUISIÇÃO
+            // =================================================
 
             try {
-                const response = await fetch(urlBusca, {
-                    method: 'GET',
-                    headers: {
-                        "apikey": SUPABASE_KEY,
-                        "Authorization": "Bearer " + SUPABASE_KEY
-                    }
-                });
 
-                if (!response.ok) throw new Error("Erro na requisição com o servidor.");
 
-                dadosGlobais = await response.json();
+                const response =
+                    await fetch(urlBusca, {
 
-                if (dadosGlobais.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-500">Nenhum registro encontrado.</td></tr>`;
-                    return;
+                        method: "GET",
+
+                        headers: {
+
+                            "apikey":
+                                SUPABASE_KEY,
+
+                            "Authorization":
+                                "Bearer " +
+                                SUPABASE_KEY,
+
+                            "Content-Type":
+                                "application/json"
+
+                        }
+
+                    });
+
+
+
+                // =================================================
+                // TRATAMENTO DE ERRO HTTP
+                // =================================================
+
+                if (!response.ok) {
+
+
+                    const erro =
+                        await response.text();
+
+
+                    console.error(
+                        "Status HTTP:",
+                        response.status
+                    );
+
+
+                    console.error(
+                        "Resposta Supabase:",
+                        erro
+                    );
+
+
+                    mostrarDiagnostico(
+
+                        "❌ ERRO NA CONEXÃO\n\n" +
+
+                        "Status HTTP: " +
+                        response.status +
+                        "\n\n" +
+
+                        "Resposta do Supabase:\n" +
+                        erro
+
+                    );
+
+
+                    alterarStatusSistema(
+                        "Erro na conexão",
+                        "erro"
+                    );
+
+
+                    throw new Error(
+
+                        "Supabase respondeu " +
+                        response.status +
+                        ": " +
+                        erro
+
+                    );
+
                 }
 
-                tbody.innerHTML = "";
-                dadosGlobais.forEach(item => {
-                    const tr = document.createElement('tr');
-                    tr.className = "hover:bg-slate-700/30 transition duration-150";
 
-                    // Formatação de cor para os status
-                    let badgeColor = "bg-emerald-900/50 text-emerald-300 border border-emerald-700/50";
-                    if (item.log_status && item.log_status.includes("Alerta")) {
-                        badgeColor = "bg-amber-900/50 text-amber-300 border border-amber-700/50";
+
+                // =================================================
+                // CONVERTE RESPOSTA
+                // =================================================
+
+                dadosGlobais =
+                    await response.json();
+
+
+
+                console.log(
+                    "Dados recebidos:",
+                    dadosGlobais
+                );
+
+
+
+                // =================================================
+                // CONEXÃO OK
+                // =================================================
+
+                mostrarDiagnostico(
+
+                    "✅ CONEXÃO COM SUPABASE FUNCIONANDO!\n\n" +
+
+                    "Status HTTP: " +
+                    response.status +
+                    "\n\n" +
+
+                    "Quantidade de registros recebidos: " +
+                    dadosGlobais.length
+
+                );
+
+
+                alterarStatusSistema(
+                    "Sistema Online",
+                    "sucesso"
+                );
+
+
+
+                // =================================================
+                // NENHUM REGISTRO
+                // =================================================
+
+                if (dadosGlobais.length === 0) {
+
+
+                    tbody.innerHTML = `
+                        <tr>
+
+                            <td colspan="4"
+                                class="p-6 text-center text-slate-500">
+
+                                Nenhum registro encontrado.
+
+                            </td>
+
+                        </tr>
+                    `;
+
+
+                    document.getElementById(
+                        "totalRegistros"
+                    ).textContent = "0";
+
+
+                    document.getElementById(
+                        "ultimaTemperatura"
+                    ).textContent = "--";
+
+
+                    document.getElementById(
+                        "ultimaUmidade"
+                    ).textContent = "--";
+
+
+                    return;
+
+                }
+
+
+
+                // =================================================
+                // ATUALIZA CONTADOR
+                // =================================================
+
+                document.getElementById(
+                    "totalRegistros"
+                ).textContent =
+                    dadosGlobais.length;
+
+
+
+                // =================================================
+                // ÚLTIMA LEITURA
+                // =================================================
+
+                const ultima =
+                    dadosGlobais[0];
+
+
+                document.getElementById(
+                    "ultimaTemperatura"
+                ).textContent =
+                    ultima.temperatura +
+                    " °C";
+
+
+                document.getElementById(
+                    "ultimaUmidade"
+                ).textContent =
+                    ultima.umidade +
+                    " %";
+
+
+
+                // =================================================
+                // LIMPA TABELA
+                // =================================================
+
+                tbody.innerHTML = "";
+
+
+
+                // =================================================
+                // PERCORRE REGISTROS
+                // =================================================
+
+                dadosGlobais.forEach(
+                    function (item) {
+
+
+                        const tr =
+                            document.createElement("tr");
+
+
+                        tr.className =
+                            "hover:bg-slate-700/30 " +
+                            "transition duration-150";
+
+
+
+                        // =================================================
+                        // COR DO STATUS
+                        // =================================================
+
+                        let badgeColor =
+                            "bg-emerald-900/50 " +
+                            "text-emerald-300 " +
+                            "border border-emerald-700/50";
+
+
+                        if (
+                            item.log_status &&
+                            item.log_status
+                                .toLowerCase()
+                                .includes("alerta")
+                        ) {
+
+                            badgeColor =
+                                "bg-amber-900/50 " +
+                                "text-amber-300 " +
+                                "border border-amber-700/50";
+
+                        }
+
+
+
+                        // =================================================
+                        // HTML DA LINHA
+                        // =================================================
+
+                        tr.innerHTML = `
+
+                            <td class="p-4 text-slate-300">
+
+                                ${
+                                    item.data_registro || "-"
+                                }
+
+                                às
+
+                                ${
+                                    item.hora_registro || "-"
+                                }
+
+                            </td>
+
+
+                            <td class="p-4 font-semibold text-slate-100">
+
+                                ${
+                                    item.temperatura ?? "-"
+                                }
+
+                                °C
+
+                            </td>
+
+
+                            <td class="p-4 font-semibold text-slate-100">
+
+                                ${
+                                    item.umidade ?? "-"
+                                }
+
+                                %
+
+                            </td>
+
+
+                            <td class="p-4">
+
+                                <span
+                                    class="px-2.5 py-1 rounded-full 
+                                           text-xs font-medium 
+                                           ${badgeColor}">
+
+                                    ${
+                                        item.log_status || "-"
+                                    }
+
+                                </span>
+
+                            </td>
+
+                        `;
+
+
+                        tbody.appendChild(tr);
+
                     }
 
-                    tr.innerHTML = `
-                        <td class="p-4 text-slate-300">${item.data_registro || '-'} às ${item.hora_registro || '-'}</td>
-                        <td class="p-4 font-semibold text-slate-100">${item.temperatura} °C</td>
-                        <td class="p-4 font-semibold text-slate-100">${item.umidade} %</td>
-                        <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-medium ${badgeColor}">${item.log_status}</span></td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                );
 
-            } catch (error) {
-                console.error(error);
-                alert("Erro ao buscar dados do servidor. Verifique as credenciais.");
-                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-red-400">Falha na conexão com o Supabase.</td></tr>`;
+
+
             }
+
+            catch (error) {
+
+
+                console.error(
+                    "Erro completo:",
+                    error
+                );
+
+
+                alterarStatusSistema(
+                    "Falha na conexão",
+                    "erro"
+                );
+
+
+                tbody.innerHTML = `
+
+                    <tr>
+
+                        <td colspan="4"
+                            class="p-6 text-center text-red-400">
+
+                            ❌ Falha na conexão com o Supabase.
+
+                            <br><br>
+
+                            Abra o console do navegador
+                            pressionando F12 para ver
+                            o erro detalhado.
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+
+            }
+
         }
+
+
+
+        // =================================================
+        // EXPORTAR CSV
+        // =================================================
 
         function exportarCSV() {
+
+
             if (dadosGlobais.length === 0) {
-                alert("Não há dados carregados para exportar!");
+
+                alert(
+                    "Não há dados carregados para exportar!"
+                );
+
                 return;
+
             }
 
-            let csvContent = "data:text/csv;charset=utf-8,ID,Temperatura,Umidade,Data,Hora,Status\r\n";
-            dadosGlobais.forEach(row => {
-                csvContent += `${row.id},${row.temperatura},${row.umidade},${row.data_registro},${row.hora_registro},"${row.log_status}"\r\n`;
-            });
 
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "relatorio_nm_labs.csv");
+
+            let csvContent =
+                "data:text/csv;charset=utf-8,";
+
+
+            csvContent +=
+                "ID,Temperatura,Umidade,Data,Hora,Status\r\n";
+
+
+
+            dadosGlobais.forEach(
+                function (row) {
+
+
+                    csvContent +=
+
+                        `${row.id},` +
+
+                        `${row.temperatura},` +
+
+                        `${row.umidade},` +
+
+                        `${row.data_registro},` +
+
+                        `${row.hora_registro},` +
+
+                        `"${row.log_status}"` +
+
+                        `\r\n`;
+
+                }
+
+            );
+
+
+
+            const encodedUri =
+                encodeURI(csvContent);
+
+
+            const link =
+                document.createElement("a");
+
+
+            link.setAttribute(
+                "href",
+                encodedUri
+            );
+
+
+            link.setAttribute(
+                "download",
+                "relatorio_nm_labs.csv"
+            );
+
+
             document.body.appendChild(link);
+
+
             link.click();
+
+
             document.body.removeChild(link);
+
         }
 
-        // Carrega os dados automaticamente ao abrir a página
-        window.onload = carregarDados;
+
+
+        // =================================================
+        // INICIALIZAÇÃO
+        // =================================================
+
+        window.onload =
+            function () {
+
+                carregarDados();
+
+            };
+
+
     </script>
+
 </body>
+
 </html>
+```
